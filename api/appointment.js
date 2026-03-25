@@ -47,24 +47,33 @@ export default async function handler(req, res) {
     // Base64 encode the ICS for attachment
     const icsBase64 = Buffer.from(icsContent).toString('base64');
 
-    // Email HTML — keep short since ICS attachment shows the details
-    const swathiHtml = `
+    // Email HTML template — detailed for both parties
+    const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-        <p>Hi Swathi,</p>
-        <p>A new appointment has been requested by <strong>${name}</strong> (${email}).</p>
-        ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-        <p>Please review the calendar invite attached and Accept or Decline.</p>
-        <p style="font-size:13px;color:#888;">— Progressive Financial Services</p>
-      </div>`;
-
-    const clientHtml = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-        <p>Hi ${name},</p>
-        <p>Thank you for booking an appointment with Progressive Financial Services!</p>
-        <p>Please review the calendar invite attached and click <strong>Accept</strong> to confirm.</p>
-        ${notes ? `<p><strong>Your notes:</strong> ${notes}</p>` : ''}
-        <p>If you have questions, reply to this email or call +1 (609) 751-1089.</p>
-        <p style="font-size:13px;color:#888;">— Swathi Nalluri, Progressive Financial Services</p>
+        <div style="background:linear-gradient(135deg,#4A3AFF,#00B4A6);padding:24px;border-radius:12px 12px 0 0;color:#fff;">
+          <h2 style="margin:0;font-size:22px;">📅 Appointment Confirmation</h2>
+          <p style="margin:8px 0 0;opacity:0.9;font-size:14px;">Progressive Financial Services</p>
+        </div>
+        <div style="background:#fff;padding:24px;border:1px solid #e8e8e8;border-top:0;border-radius:0 0 12px 12px;">
+          <table style="width:100%;font-size:14px;line-height:1.8;">
+            <tr><td style="color:#666;width:100px;">👤 Client</td><td><strong>${name}</strong> (${email})</td></tr>
+            <tr><td style="color:#666;">📋 Subject</td><td>${subject || 'Consultation'}</td></tr>
+            <tr><td style="color:#666;">📅 Date</td><td><strong>${prettyDate}</strong></td></tr>
+            <tr><td style="color:#666;">⏱️ Duration</td><td>30 minutes</td></tr>
+            <tr><td style="color:#666;">📍 Location</td><td>Zoom Meeting</td></tr>
+          </table>
+          <div style="margin:20px 0;padding:16px;background:#f5f3ff;border-radius:8px;border-left:4px solid #4A3AFF;">
+            <strong style="font-size:14px;">🔗 Zoom Meeting</strong><br>
+            <a href="${ZOOM_LINK}" style="color:#4A3AFF;font-size:13px;">Join Meeting</a><br>
+            <span style="font-size:12px;color:#666;">Meeting ID: 844 0414 1315 · Passcode: 178541</span>
+          </div>
+          ${notes ? `<div style="margin:16px 0;"><strong>📝 Notes:</strong><br><span style="color:#555;">${notes}</span></div>` : ''}
+          <hr style="border:none;border-top:1px solid #eee;margin:20px 0;">
+          <p style="font-size:12px;color:#999;text-align:center;">
+            Progressive Financial Services · 32 Cinder Rd Unit 20, Edison, NJ 08820<br>
+            +1 (609) 751-1089 · swathisurya@progressivefinserv.com
+          </p>
+        </div>
       </div>`;
 
     // Send to BOTH Swathi and the client with calendar invite attachment
@@ -81,7 +90,7 @@ export default async function handler(req, res) {
           to: SWATHI_EMAIL,
           reply_to: email,
           subject: `📅 New Appointment: ${subject || 'Consultation'} — ${prettyDate}`,
-          html: swathiHtml,
+          html: emailHtml,
           attachments: [{
             filename: 'appointment.ics',
             content: icsBase64,
@@ -101,7 +110,7 @@ export default async function handler(req, res) {
           to: email,
           reply_to: SWATHI_EMAIL,
           subject: `📅 Your Appointment — Progressive Financial Services — ${prettyDate}`,
-          html: clientHtml,
+          html: emailHtml,
           attachments: [{
             filename: 'appointment.ics',
             content: icsBase64,
