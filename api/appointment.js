@@ -50,7 +50,7 @@ export default async function handler(req, res) {
     // Email HTML template — detailed for both parties
     const emailHtml = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-        <div style="background:linear-gradient(135deg,#4A3AFF,#00B4A6);padding:24px;border-radius:12px 12px 0 0;color:#fff;">
+        <div style="background:linear-gradient(135deg,#4A3AFF,#00B4A6);padding:24px;border-radius:12px 12px 0 0;color:#fff;text-align:center;">
           <h2 style="margin:0;font-size:22px;">📅 Appointment Confirmation</h2>
           <p style="margin:8px 0 0;opacity:0.9;font-size:14px;">Progressive Financial Services</p>
         </div>
@@ -142,7 +142,12 @@ export default async function handler(req, res) {
 
 function generateICS({ summary, description, location, start, end, organizerEmail, organizerName, attendeeEmail, attendeeName, zoomLink }) {
   const pad = (n) => String(n).padStart(2, '0');
-  const toICS = (d) => d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) +
+
+  // Format as local time (no Z suffix) for use with TZID
+  const toLocalICS = (d) => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
+    'T' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+
+  const toUTC = (d) => d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) +
     'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
 
   const uid = Date.now() + '-' + Math.random().toString(36).substr(2,9) + '@progressivefinserv.com';
@@ -153,11 +158,29 @@ function generateICS({ summary, description, location, start, end, organizerEmai
     'PRODID:-//Progressive Financial Services//Appointment//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    'X-WR-TIMEZONE:America/New_York',
+    'BEGIN:VTIMEZONE',
+    'TZID:America/New_York',
+    'BEGIN:STANDARD',
+    'DTSTART:19701101T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU',
+    'TZOFFSETFROM:-0400',
+    'TZOFFSETTO:-0500',
+    'TZNAME:EST',
+    'END:STANDARD',
+    'BEGIN:DAYLIGHT',
+    'DTSTART:19700308T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU',
+    'TZOFFSETFROM:-0500',
+    'TZOFFSETTO:-0400',
+    'TZNAME:EDT',
+    'END:DAYLIGHT',
+    'END:VTIMEZONE',
     'BEGIN:VEVENT',
     'UID:' + uid,
-    'DTSTAMP:' + toICS(new Date()),
-    'DTSTART:' + toICS(start),
-    'DTEND:' + toICS(end),
+    'DTSTAMP:' + toUTC(new Date()),
+    'DTSTART;TZID=America/New_York:' + toLocalICS(start),
+    'DTEND;TZID=America/New_York:' + toLocalICS(end),
     'SUMMARY:' + summary,
     'LOCATION:' + location,
     'URL:' + zoomLink,
